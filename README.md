@@ -132,7 +132,7 @@ Para referências técnicas e detalhes de implementação, consulte sempre a doc
 Para entender os conceitos por trás das ferramentas, estes recursos são um ótimo ponto de partida:
 
 - **Engenharia de Prompts:** [Guia de Engenharia de Prompt](https://www.promptingguide.ai/pt/introduction) - Um guia completo sobre técnicas de prompting, desde o básico até o avançado.
-- **Arquitetura RAG:** [O que é RAG? (Pinecone)](https://www.pinecone.io/learn/retrieval-augmented-generation/) - Uma explicação clara e visual sobre o que é e por que usar a Geração Aumentada por Recuperação.
+- **Arquitetura RAG:** [O que é RAG?](https://unrag.dev/docs/rag) - Uma explicação clara (Guide) e visual sobre o que é e por que usar a Geração Aumentada por Recuperação.
 - **Bancos de Dados Vetoriais:** [O que é um Banco de Dados Vetorial? (Elastic)](https://www.elastic.co/what-is/vector-database) - Desmistifica o conceito de embeddings e bancos de dados vetoriais.
 - **GitFlow e Versionamento:** [A Successful Git Branching Model](https://nvie.com/posts/a-successful-git-branching-model/) - O post clássico que introduziu o modelo GitFlow, essencial para trabalho em equipe.
 - **Conventional Commits:** [Especificação do Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) - Aprenda a escrever mensagens de commit claras e padronizadas.
