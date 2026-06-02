@@ -3,20 +3,19 @@ import chromadb
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# define caminho absoluto do banco
+# define caminho do banco
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 CHROMA_PATH = os.path.join(BASE_DIR, "chroma")
 
-# conecta no banco certo
+# conecta ao banco
 client = chromadb.PersistentClient(path=CHROMA_PATH)
 
-# pega a collection já criada na ingestion
+# pega a collection criada na ingestion
 collection = client.get_collection("docs")
 
 
 def retrieve(query: str, top_k: int = 3):
 
-    # buscar documentos e metadata
     data = collection.get(include=["documents", "metadatas"])
 
     docs = data["documents"]
@@ -24,24 +23,21 @@ def retrieve(query: str, top_k: int = 3):
 
     print("Total de docs no banco:", len(docs))
 
-    # proteção caso banco esteja vazio
     if not docs:
         return []
 
-    # vetorizar docs + query
     vectorizer = TfidfVectorizer()
     vectors = vectorizer.fit_transform(docs + [query]).toarray()
 
     query_vec = vectors[-1].reshape(1, -1)
     doc_vecs = vectors[:-1]
 
-    # calcular similaridade
     scores = cosine_similarity(doc_vecs, query_vec).flatten()
 
-    # pegar índices mais relevantes
     top_idx = scores.argsort()[-top_k:][::-1]
 
-    # montar resposta estruturada
+    print("\n TOP INDICES:", top_idx)
+
     results = [
         {
             "text": docs[i],
@@ -52,3 +48,14 @@ def retrieve(query: str, top_k: int = 3):
     ]
 
     return results
+
+
+# isso permite rodar direto no terminal
+if __name__ == "__main__":
+    results = retrieve("cliente conservador investindo em ações")
+
+    for r in results:
+        print("\n--- RESULTADO ---")
+        print("Arquivo:", r["source"])
+        print("Chunk:", r["chunk_id"])
+        print("Texto:", r["text"])

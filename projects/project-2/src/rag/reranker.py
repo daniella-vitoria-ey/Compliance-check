@@ -1,7 +1,6 @@
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-
 def rerank(query: str, documents: list, top_k: int = 3):
     if not documents:
         return []
