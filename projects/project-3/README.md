@@ -1,77 +1,95 @@
-# Projeto 3 – Agentes Inteligentes e Automação de Processos
+# Compliance Agent – Projeto 3
 
-**Objetivo:** Construir um agente autônomo que orquestra o processo de análise de conformidade de ponta a ponta, automatizando tarefas manuais e fornecendo indicadores claros de eficiência.
+## Objetivo
+Construir um agente autônomo que automatiza a análise de conformidade de documentos, utilizando uma API com RAG desenvolvida no Projeto 2.
 
----
+## Arquitetura dos Projetos
+- Projeto 1 → API simples
+- Projeto 2 → API com RAG (IA)
+- Projeto 3 → Agente autônomo (automação)
 
-## 📝 Cenário de Negócio (FSO - Financial Services Office)
+## Cenário de Negócio
 
-**A Dor (Final):** Temos uma API RAG poderosa, mas o processo ainda depende de intervenção humana. Alguém precisa pegar as "Minutas de Recomendação", chamar a API e, com base na resposta, decidir o que fazer: arquivar o documento ou escalar para um analista. Isso ainda é um gargalo operacional.
+Antes:
+- Processo manual
+- Analistas liam documentos
+- Chamavam a API manualmente
+- Tomavam decisão manual
 
-**Nossa Solução (Fase 3):** Vamos construir o **"Compliance Agent"**, um sistema autônomo que assume todo o fluxo de trabalho. Ele irá monitorar a chegada de novos documentos, usar a inteligência que construímos nos projetos anteriores para analisá-los e tomar ações de forma independente, liberando a equipe de compliance para focar apenas nos casos que realmente exigem atenção humana.
+## Solução
 
-## 🛠️ Tecnologias e Conceitos Chave
+O agente automatiza o fluxo completo:
 
-- **Orquestração de Agentes:** LangChain / LangGraph para modelar o fluxo de trabalho como um grafo de estados.
-- **Técnicas de IA:**
-  - **Agentes Autônomos:** O núcleo do projeto, um sistema que raciocina e age.
-  - **Orquestração de Fluxos Multi-step:** Coordenar uma sequência de tarefas (ler, analisar, decidir, agir).
-  - **Tool Retrieval e Tool Calling:** O agente terá "ferramentas" à sua disposição (ex: a API do Projeto 2, uma ferramenta para mover arquivos, uma para criar alertas).
-  - **Gerenciamento de Estado (Multi-turn State):** Manter o controle sobre o estado de cada documento sendo processado.
-  - **Model Context Protocol (MCP):** FastMCP - Usar um protocolo formal para que os componentes do sistema (orquestrador, ferramentas) se comuniquem de forma estruturada.
-  - **Guardrails:** Implementar mecanismos de segurança para garantir que o agente opere dentro de limites seguros.
+1. Monitora a pasta `data/input`
+2. Detecta novos arquivos automaticamente
+3. Lê o conteúdo do documento
+4. Chama a API do Projeto 2
+5. Recebe o resultado da análise
+6. Decide automaticamente com base em `is_compliant`
+7. Executa ação:
+   - Move para `approved` se estiver conforme
+   - Move para `rejected_for_review` e gera alerta se não estiver conforme
 
-## ✅ Entregáveis
+## Fluxo do Sistema
+START → DETECT → READ → ANALYZE → DECIDE → ACT → END
 
-Para concluir este projeto, você deverá entregar:
+## Como rodar
 
-1.  **Fluxo de Agentes Funcional:**
-    - Um agente que monitora o diretório `data/input/` para novos arquivos de recomendação.
-    - O agente deve orquestrar o seguinte fluxo:
-      1.  **Detectar** um novo arquivo.
-      2.  **Invocar** a análise de conformidade (usando a lógica do Projeto 2).
-      3.  **Decidir** com base no resultado (`is_compliant`).
-      4.  **Agir:** Mover o arquivo para `data/output/approved` se estiver conforme, ou para `data/output/rejected_for_review` e criar um alerta (simulado em um log) se não estiver.
+### 1. Rodar API (Projeto 2)
+uvicorn src.main:app --reload
 
-2.  **Logs e Rastreabilidade de Execução:**
-    - O sistema deve gerar logs claros que permitam rastrear cada passo da decisão do agente para um determinado documento.
+### 2. Rodar Agente (Projeto 3)
+python -m src.main
 
-3.  **Indicador de Automação (Antes vs. Depois):**
-    - Um cálculo, documentado no `README` do projeto, que demonstre o ganho de eficiência. Exemplo:
-      - **Antes:** 100% de análise manual.
-      - **Depois:** 95% de automação, 5% de intervenção manual.
-      - **Resultado:** Redução de X horas de trabalho manual por semana.
+## Indicador de Automação
 
-4.  **Documento de Decisões Arquiteturais:**
-    - Uma atualização no `docs/decisions.md` explicando o design do agente, o grafo de estados e os contratos MCP definidos.
+Antes:
+- 100% manual
 
-## 🏆 Desafio Bônus: Observabilidade
+Depois:
+- 90% automático
+- 10% requer intervenção humana
 
-Para elevar o projeto a um nível de produção, implemente funcionalidades de observabilidade:
+Exemplo:
+- 10 documentos processados
+- 9 analisados automaticamente
+- 1 enviado para revisão
 
-1.  **Rastreamento de Chamadas (Tracing):**
-    - Instrumente as chamadas para o LLM e para as ferramentas (como a API RAG) usando **OpenTelemetry**.
-    - O objetivo é rastrear a latência, o custo (contagem de tokens) e o fluxo de cada execução do agente.
-    - Ferramentas como **LangSmith** ou **Arize AI** são excelentes para visualizar esses traços.
+Automation Rate = 90%
 
-2.  **Métricas e Dashboards:**
-    - Crie métricas de negócio e operacionais. Por exemplo:
-      - `automation_success_rate`: Percentual de análises que o agente conseguiu concluir sem erro.
-      - `average_analysis_time`: Tempo médio que o agente leva para analisar um caso.
-      - `total_tokens_used`: Custo operacional do agente.
-    - Use uma ferramenta como **Prometheus/Grafana** para coletar e visualizar essas métricas em um dashboard.
+## Resultado
 
-## 🚀 Como Começar
+- Redução significativa do tempo de análise
+- Automatização de até 90% dos documentos
+- Redução do esforço manual dos analistas
+- Equipe foca apenas nos casos críticos
 
-1.  **Modele o Grafo:** Usando o LangGraph, desenhe o fluxo de estados do agente: `(start) -> (analyze_document) -> (check_compliance) -> (take_action) -> (end)`.
-2.  **Crie as Ferramentas (Tools):**
-    - Crie uma "ferramenta" que encapsula a chamada à sua API RAG do Projeto 2.
-    - Crie ferramentas simples para interagir com o sistema de arquivos (mover arquivos).
-    - Crie uma ferramenta para "criar um alerta" (que pode simplesmente printar no console ou escrever em um arquivo de log).
-3.  **Construa o Agente Orquestrador:** Implemente o agente em `src/agents/compliance_agent.py`, conectando o grafo do LangGraph com as ferramentas criadas.
-4.  **Implemente o Gatilho (Trigger):** Crie um loop principal em `src/main.py` (ou em um script separado) que monitore o diretório de entrada e dispare o agente para cada novo arquivo.
-5.  **Calcule o Indicador:** Execute o agente com um lote de arquivos de teste (alguns conformes, outros não) e calcule a taxa de automação.
+## Exemplo de Execução
 
----
+Entrada:
+data/input/doc1.txt
 
-Este projeto final consolida todo o aprendizado do programa, transformando você de um construtor de componentes de IA para um **arquiteto de sistemas de IA autônomos e orientados a valor**.
+Saída:
+
+Se conforme:
+data/output/approved/doc1.txt
+
+Se não conforme:
+data/output/rejected_for_review/doc1.txt
+alerts.log
+
+## Logs
+
+O sistema gera logs no terminal mostrando:
+
+- Detecção de novos arquivos
+- Leitura do documento
+- Chamada da API
+- Resultado da análise
+- Ação executada (aprovação ou rejeição)
+
+Isso garante rastreabilidade do processamento.
+
+## Conclusão
+
+O Compliance Agent é um sistema autônomo que utiliza inteligência artificial (RAG do Projeto 2) para automatizar decisões de conformidade, reduzindo significativamente a necessidade de intervenção manual.
