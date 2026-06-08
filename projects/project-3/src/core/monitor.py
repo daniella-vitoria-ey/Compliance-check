@@ -7,7 +7,6 @@ from src.core.logger import get_logger
 
 logger = get_logger(__name__)
 
-
 class Handler(FileSystemEventHandler):
 
     def __init__(self):
@@ -39,8 +38,6 @@ class Monitor:
         self.observer = Observer()
 
     def run(self):
-        os.makedirs(self.path, exist_ok=True)
-
         handler = Handler()
         self.observer.schedule(handler, self.path, recursive=False)
 

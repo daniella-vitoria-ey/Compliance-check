@@ -5,7 +5,7 @@ from src.core.file_manager import FileManager
 logger = get_logger(__name__)
 
 
-# ✅ Estado do documento (estilo LangGraph)
+# Estado do documento (estilo LangGraph)
 class DocumentState:
     def __init__(self, file_path):
         self.file_path = file_path
@@ -37,7 +37,7 @@ class ComplianceAgent:
         except Exception as e:
             logger.error(f"Erro no processamento: {e}")
 
-    # ✅ Etapas do pipeline
+    # Etapas do pipeline
 
     def read_file(self, state):
         logger.info("Lendo arquivo")
