@@ -1,58 +1,167 @@
-# 🏁 Projeto Final: Apresentação Executiva e Defesa da Solução
+# Compliance Checker: De API a Agente Autônomo
 
-**Objetivo:** Consolidar e comunicar o valor de negócio e a excelência técnica da solução construída ao longo do programa. Este projeto final não envolve codificação, mas sim as habilidades de comunicação, apresentação e defesa de uma solução de ponta a ponta.
+## Executive Summary
 
----
+Esta solução apresenta um sistema completo de automação de compliance financeiro, capaz de analisar recomendações, tomar decisões e executar ações operacionais de forma automática.
 
-## 📝 Cenário
-
-Você concluiu os três projetos e agora possui um sistema de automação de compliance funcional e robusto. Chegou a hora de "vender" sua solução para stakeholders, que podem ser líderes de negócio (que se importam com o impacto) ou líderes técnicos (que se importam com a arquitetura e escalabilidade).
-
-Este desafio finaliza o ciclo **Learn, Build, Present, Defend**.
-
-## ✅ Entregáveis
-
-Para concluir este projeto, você deverá entregar dois artefatos de comunicação que se complementam.
-
-### 1. Vídeo de Demonstração (Máximo 5 minutos)
-
-Grave um vídeo conciso e impactante que demonstre a solução em ação. O vídeo deve ser autoexplicativo e focado no "o quê" e no "porquê".
-
-**Roteiro Sugerido:**
-1.  **O Problema (30s):** Comece explicando a dor de negócio: o processo manual, lento e caro de análise de compliance.
-2.  **A Solução em Ação (2m 30s):**
-    - Mostre a **interface Streamlit** (do Projeto 2).
-    - Submeta um texto de recomendação claramente **não conforme**. Mostre a interface exibindo a resposta negativa e a justificativa baseada na política.
-    - Submeta um texto **conforme**. Mostre a resposta positiva.
-    - Mostre os "bastidores" do **Agente Autônomo** (do Projeto 3): a pasta de entrada, o agente processando o arquivo, e o arquivo sendo movido para a pasta `approved` ou `rejected`.
-    - Mostre rapidamente o **dashboard de observabilidade** (do desafio bônus), destacando métricas como "taxa de automação" ou "tempo médio de análise".
-3.  **O Impacto (1m):** Conclua resumindo os benefícios: redução de trabalho manual, aumento da consistência, rastreabilidade das decisões e liberação dos analistas para tarefas de maior valor.
-4.  **Encerramento (30s):** Termine com uma frase de impacto sobre o poder da automação inteligente.
-
-### 2. Apresentação de Arquitetura (5-7 slides)
-
-Crie uma apresentação no formato "Lunch & Learn" ou "Architectural Review", destinada a um público técnico (outros engenheiros, arquitetos, líderes de tecnologia). O foco aqui é o "como".
-
-**Estrutura Sugerida:**
--   **Slide 1: Título e Resumo da Solução**
-    - Nome do Projeto: "Compliance Checker: De API a Agente Autônomo"
-    - Resumo de uma frase do que foi construído.
--   **Slide 2: A Jornada da Arquitetura**
-    - Use o diagrama Mermaid do `README.md` principal para mostrar a evolução do Projeto 1 ao 3.
-    - Destaque como cada fase resolveu uma limitação da anterior.
--   **Slide 3: Deep Dive no Projeto 2 (RAG Confiável)**
-    - Mostre o diagrama de arquitetura do RAG.
-    - Explique as escolhas técnicas: a estratégia de *chunking*, o banco de dados vetorial escolhido e a importância do *re-ranking*.
--   **Slide 4: Deep Dive no Projeto 3 (Agente Autônomo)**
-    - Mostre o grafo de estados do LangGraph.
-    - Explique como o agente gerencia o estado e utiliza as "ferramentas" (a API RAG, o sistema de arquivos).
--   **Slide 5: Observabilidade e LLMOps**
-    - Apresente o dashboard de métricas.
-    - Explique como o rastreamento com OpenTelemetry ajuda a depurar e otimizar o sistema.
--   **Slide 6: Próximos Passos e Melhorias Futuras**
-    - Demonstre pensamento estratégico: O que você faria a seguir? (Ex: fine-tuning de um modelo para o re-ranking, adicionar mais ferramentas ao agente, etc.).
--   **Slide 7: Q&A / Contato**
+O sistema elimina a dependência de processos manuais, tornando o fluxo mais rápido, consistente, rastreável e escalável. O resultado é a redução de esforço operacional e melhor utilização do tempo dos analistas.
 
 ---
 
-A conclusão bem-sucedida deste projeto final demonstra não apenas sua competência técnica, mas sua capacidade de articular, defender e provar o valor do seu trabalho – a marca de um verdadeiro Engenheiro de IA sênior.
+## Problema de Negócio
+
+No cenário de compliance financeiro, a análise de recomendações é geralmente realizada manualmente, envolvendo:
+
+- leitura do documento
+- interpretação da recomendação
+- chamada de sistemas de análise
+- decisão operacional
+
+Esse processo gera gargalos, aumenta tempo de resposta, reduz consistência e dificulta escalabilidade.
+
+---
+
+## Visão da Solução
+
+A solução proposta automatiza todo o processo de ponta a ponta, incluindo:
+
+- análise automática de recomendações
+- uso de contexto documental para maior confiabilidade
+- tomada de decisão baseada em regras e IA
+- execução de ações operacionais
+- geração de métricas de desempenho
+
+---
+
+## Evolução da Solução
+
+A construção da solução ocorreu de forma incremental:
+
+- inicialmente, foi criada uma API capaz de analisar recomendações;
+- em seguida, a análise foi aprimorada com recuperação de contexto (RAG);
+- por fim, foi implementado um agente autônomo responsável por automatizar o fluxo completo.
+
+Essa evolução permitiu transformar uma análise isolada em um processo operacional automatizado.
+
+---
+
+## Arquitetura Final
+
+A arquitetura consolidada inclui:
+
+- API para exposição dos serviços
+- mecanismo de análise baseado em recuperação de contexto
+- agente autônomo para orquestração do fluxo
+- camada de comunicação entre agente e ferramentas
+- monitoramento de arquivos de entrada
+- sistema de métricas, logs e rastreabilidade, incluindo indicadores operacionais, desempenho e consumo de tokens do modelo
+
+
+---
+
+## Fluxo da Solução
+
+1. Um documento é recebido no sistema
+2. O monitor detecta o novo arquivo
+3. O agente lê e valida o conteúdo
+4. A análise de conformidade é executada
+5. O resultado é interpretado
+6. O documento é classificado como aprovado ou revisão
+7. O arquivo é movido para o destino correto
+8. O sistema registra métricas e status
+
+---
+
+## Capacidades da Solução
+
+A solução é capaz de:
+
+- analisar recomendações financeiras automaticamente
+- justificar decisões com base em contexto
+- identificar casos de não conformidade
+- automatizar triagem de documentos
+- registrar evidências operacionais completas
+- medir desempenho do processo com métricas operacionais e indicadores de eficiência
+- monitorar tempo de execução e consumo de tokens do modelo de linguagem
+
+---
+
+## Demonstração
+
+A solução pode ser demonstrada por meio de:
+
+- envio de recomendações para análise
+- retorno estruturado com justificativa
+- execução automática do agente a partir de novos arquivos
+- movimentação automática para pastas de saída
+- visualização de métricas operacionais
+
+---
+
+## Impacto de Negócio
+
+Os principais benefícios da solução são:
+
+- redução significativa de trabalho manual
+- aumento da consistência das decisões
+- maior rastreabilidade do processo
+- melhoria na eficiência operacional
+- maior capacidade de escala
+
+---
+
+## Indicadores de Eficiência
+
+A solução mede desempenho através de métricas operacionais, de eficiência e de custo:
+
+- volume operacional:
+  - total de documentos processados
+  - quantidade de aprovações automáticas
+  - quantidade de casos para revisão
+  - quantidade de erros
+
+- eficiência do processo:
+  - taxa de automação
+  - taxa de intervenção manual
+  - tempo médio de análise
+
+- custo operacional de IA:
+  - consumo de tokens de entrada (prompt)
+  - consumo de tokens de saída (completion)
+  - total de tokens utilizados na análise
+
+---
+
+## Diferenciais
+
+A solução apresenta como diferenciais:
+
+- integração entre análise e execução operacional
+- uso de contexto para melhorar qualidade das decisões
+- arquitetura desacoplada
+- automação completa do fluxo de compliance
+- geração de métricas operacionais, de desempenho e de custo do modelo de linguagem
+
+---
+
+## Próximos Passos
+
+Possíveis evoluções da solução incluem:
+
+- ampliação da observabilidade com ferramentas como OpenTelemetry, LangSmith, Prometheus e Grafana;
+- criação de dashboards para visualização das métricas operacionais e de desempenho;
+- aprimoramento contínuo do modelo de análise e da base de conhecimento;
+- integração com sistemas corporativos para automatização completa do fluxo;
+- expansão das capacidades do agente para novos cenários de compliance.
+
+Apesar de não utilizar ferramentas especializadas de observabilidade nesta versão, a solução já implementa métricas operacionais, de desempenho e de custo do modelo, permitindo monitoramento inicial do comportamento do sistema.
+
+---
+
+## Conclusão
+
+A solução demonstrou como é possível evoluir de uma análise simples para um sistema autônomo capaz de executar tarefas completas de compliance.
+
+Mais do que responder perguntas, o sistema atua diretamente no processo operacional, automatizando decisões e gerando valor real para o negócio.
+
+Essa abordagem evidencia o potencial dos agentes inteligentes na transformação de fluxos manuais em sistemas escaláveis, eficientes e orientados a dados.
