@@ -13,7 +13,6 @@ client = chromadb.PersistentClient(path=CHROMA_PATH)
 # pega a collection criada na ingestion
 collection = client.get_collection("docs")
 
-
 def retrieve(query: str, top_k: int = 3):
 
     data = collection.get(include=["documents", "metadatas"])
@@ -48,7 +47,6 @@ def retrieve(query: str, top_k: int = 3):
     ]
 
     return results
-
 
 # isso permite rodar direto no terminal
 if __name__ == "__main__":

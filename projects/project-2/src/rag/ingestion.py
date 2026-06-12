@@ -16,8 +16,7 @@ except:
 
 collection = client.create_collection("docs")
 
-
-# ✅ NOVO CHUNKING (MELHORADO)
+# NOVO CHUNKING (MELHORADO)
 def chunk_text(text, chunk_size=300, overlap=50):
     words = text.split()
     chunks = []
@@ -28,11 +27,10 @@ def chunk_text(text, chunk_size=300, overlap=50):
 
     return chunks
 
-
 def run_ingestion():
     print("INICIANDO INGESTÃO")
 
-    # ✅ caminho corrigido
+    # caminho corrigido
     base_path = os.path.join(BASE_DIR, "knowledge_base")
 
     all_chunks = []
@@ -45,7 +43,7 @@ def run_ingestion():
             print("Processando:", file)
             full_path = os.path.join(base_path, file)
 
-            # ✅ leitura
+            # leitura
             if file.lower().endswith(".txt"):
                 with open(full_path, "r", encoding="utf-8") as f:
                     text = f.read()
@@ -61,7 +59,7 @@ def run_ingestion():
 
                 text = "\n".join(pages_text)
 
-            # ✅ CHUNKING MELHORADO (ESSA É A MUDANÇA PRINCIPAL)
+            # CHUNKING MELHORADO (ESSA É A MUDANÇA PRINCIPAL)
             chunks = chunk_text(text)
 
             for i, chunk in enumerate(chunks):
@@ -81,7 +79,7 @@ def run_ingestion():
         print("Nenhum texto encontrado!")
         return
 
-    # ✅ vetoriza
+    # vetoriza
     vectorizer = TfidfVectorizer()
     embeddings = vectorizer.fit_transform(all_chunks).toarray()
 
@@ -94,7 +92,6 @@ def run_ingestion():
 
     print("Ingestão concluída!")
     print("Total de chunks:", len(all_chunks))
-
 
 if __name__ == "__main__":
     run_ingestion()

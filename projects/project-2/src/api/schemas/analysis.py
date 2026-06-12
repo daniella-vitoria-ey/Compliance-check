@@ -1,19 +1,20 @@
 from pydantic import BaseModel, Field
 from typing import List
 
-
 class AnalysisRequest(BaseModel):
     text_to_analyze: str = Field(
         ...,
         min_length=10,
         description="Texto da recomendação a ser analisada."
     )
-
+    client_profile: str = Field(
+        ...,
+        description="Perfil do cliente. Ex.: conservador, moderado ou arrojado."
+    )
 
 class Source(BaseModel):
-    document: str
-    chunk_id: str
-
+    source_document: str
+    source_chunk_id: str
 
 class AnalysisResponse(BaseModel):
     is_compliant: bool = Field(

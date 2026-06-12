@@ -4,3 +4,8 @@ pydantic
 python-dotenv
 openai
 instructor
+chromadb
+scikit-learn
+pypdf
+pytest
+httpx
