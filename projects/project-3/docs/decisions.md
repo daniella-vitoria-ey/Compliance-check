@@ -2,7 +2,7 @@
 
 ## Contexto
 
-O objetivo do projeto é automatizar o fluxo de análise de conformidade de recomendações financeiras, reduzindo intervenção humana e transformando uma API de análise em um processo operacional autônomo.
+O objetivo do projeto é automatizar o fluxo de análise de conformidade de recomendações financeiras, reduzindo intervenção humana e transformando uma análise isolada em um processo operacional autônomo.
 
 Este documento registra as principais decisões arquiteturais adotadas.
 
@@ -27,10 +27,10 @@ O comportamento do agente ficou mais explícito, auditável e fácil de evoluir.
 Foi criado um estado tipado para transportar dados ao longo do fluxo.
 
 ### Motivação
-Cada documento precisa manter contexto entre as etapas, incluindo conteúdo, perfil do cliente, resultado, destino, status e tempo de análise.
+Cada documento precisa manter contexto entre as etapas, incluindo conteúdo, perfil do cliente, resultado, destino, status, tempo de análise e identificador de rastreamento.
 
 ### Consequência
-O fluxo ficou consistente e menos sujeito a acoplamento implícito.
+O fluxo ficou consistente, auditável e menos sujeito a acoplamento implícito.
 
 ---
 
@@ -66,7 +66,7 @@ A API se tornou uma interface estável consumida pelo MCP.
 A solução reutiliza recuperação, reranqueamento e inferência construídos anteriormente.
 
 ### Motivação
-O foco do Projeto final é automação de fluxo, não reconstrução de toda a inteligência da etapa anterior.
+O foco da solução final é automação de fluxo, não reconstrução de toda a inteligência anterior.
 
 ### Consequência
 Houve continuidade arquitetural e menor retrabalho.
@@ -131,18 +131,20 @@ Os alertas tornam-se facilmente auditáveis, garantindo visibilidade sobre casos
 
 ## 10. Persistência de métricas e status
 
-### Decisão  
+### Decisão
 As informações de status do agente e as métricas operacionais são persistidas em arquivos JSON no diretório `logs/`.
 
-### Motivação  
-A abordagem prioriza simplicidade, transparência e facilidade de inspeção, permitindo acesso direto aos dados gerados pelo sistema sem necessidade de infraestrutura adicional. Essa estratégia também reduz acoplamento e mantém a solução leve durante as etapas iniciais de desenvolvimento.
+### Motivação
+A abordagem prioriza simplicidade, transparência e facilidade de inspeção, permitindo acesso direto aos dados gerados pelo sistema sem necessidade de infraestrutura adicional.
 
-Além disso, permite consolidar diferentes tipos de métricas, incluindo volume processado, desempenho operacional e custo de uso do modelo de linguagem.
+Além disso, permite consolidar:
+- volume processado;
+- desempenho operacional;
+- indicadores de eficiência;
+- custo de uso do modelo de linguagem.
 
-### Consequência  
-A solução garante visibilidade imediata sobre o comportamento do sistema, facilita processos de auditoria e debugging e permite acompanhar indicadores de eficiência e custo operacional.
-
-A arquitetura permanece preparada para evolução futura, possibilitando a substituição por soluções baseadas em banco de dados ou ferramentas de observabilidade sem alterações significativas no restante do fluxo.
+### Consequência
+A solução garante visibilidade imediata sobre o comportamento do sistema, facilita auditoria e debugging e permite acompanhar indicadores de eficiência e custo operacional.
 
 ---
 
@@ -159,7 +161,7 @@ A execução ficou mais robusta e previsível.
 
 ---
 
-## 12. Inclusão de endpoint de métricas na API
+## 12. Inclusão de endpoints de métricas na API
 
 ### Decisão
 As métricas foram expostas por meio dos endpoints:
@@ -195,20 +197,27 @@ A confiabilidade da automação aumentou.
 
 ## 14. Estratégia de Observabilidade Adotada
 
+### Decisão
+A solução implementa observabilidade operacional básica, com:
+- métricas de negócio e operacionais;
+- rastreamento por execução via `trace_id`;
+- monitoramento de custo por consumo de tokens;
+- dashboard simples no frontend.
 
-### Decisão  
-A solução não inclui, nesta versão, instrumentação avançada de observabilidade com ferramentas como OpenTelemetry, LangSmith, Prometheus ou Grafana.
+### Motivação
+Foi priorizada uma abordagem leve e funcional, capaz de oferecer visibilidade relevante sem adicionar a complexidade de uma stack completa de observabilidade.
 
-### Motivação  
-A priorização foi dirigida à construção de um fluxo funcional completo, com foco em automação ponta a ponta e coleta de métricas operacionais e de negócio, incluindo indicadores de desempenho e consumo de tokens do modelo de linguagem.
+### Consequência
+O sistema já oferece:
+- acompanhamento de automação;
+- tempo médio de análise;
+- rastreamento por execução;
+- custo operacional do modelo.
 
-### Consequência  
-O sistema já oferece visibilidade relevante por meio de logs, métricas e indicadores calculados, permitindo monitoramento básico e análise de desempenho.
-
-A arquitetura permanece preparada para evolução incremental, possibilitando a integração futura com ferramentas de observabilidade avançada sem necessidade de mudanças estruturais significativas.
+A arquitetura permanece preparada para evolução futura com ferramentas como OpenTelemetry, LangSmith, Prometheus ou Grafana.
 
 ---
 
 ## Conclusão
 
-As decisões arquiteturais priorizaram clareza, aderência ao problema de negócio e qualidade de demonstração. O resultado final é uma solução modular, rastreável e coerente com a proposta do projeto: transformar uma análise isolada em um processo autônomo orientado a valor.
+As decisões arquiteturais priorizaram clareza, aderência ao problema de negócio, rastreabilidade e qualidade de demonstração. O resultado final é uma solução modular, rastreável e coerente com a proposta do projeto: transformar uma análise isolada em um processo autônomo orientado a valor.

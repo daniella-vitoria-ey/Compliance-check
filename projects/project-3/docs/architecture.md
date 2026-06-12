@@ -15,6 +15,23 @@ A arquitetura separa claramente:
 
 ---
 
+## Jornada Arquitetural
+
+A solução evoluiu em três camadas complementares até chegar ao fluxo final automatizado:
+
+```mermaid
+flowchart LR
+    A[API de Análise] --> B[RAG Confiável]
+    B --> C[Agente Autônomo]
+```
+
+### Interpretação da evolução
+- **API de Análise**: expôs a análise como serviço.
+- **RAG Confiável**: trouxe contexto documental e maior qualidade da resposta.
+- **Agente Autônomo**: automatizou o fluxo operacional completo.
+
+---
+
 ## Componentes Principais
 
 ### 1. Camada de Entrada
@@ -69,6 +86,7 @@ A API FastAPI expõe:
 - `POST /analyze`
 
 #### Controle do agente
+
 - `POST /agent/start-monitor`
 - `POST /agent/stop-monitor`
 - `GET /agent/status`
@@ -111,6 +129,19 @@ Estrutura de saída:
 }
 
 Além dos campos de decisão e justificativa, a resposta inclui informações de uso do modelo de linguagem (`usage`), permitindo acompanhar o consumo de tokens e estimar o custo operacional da análise.
+```
+
+---
+
+# Arquitetura RAG
+
+```mermaid
+flowchart LR
+    A[Texto da Recomendação + Perfil do Cliente] --> B[Retrieval no ChromaDB]
+    B --> C[Re-ranking]
+    C --> D[Prompt com Contexto Recuperado]
+    D --> E[Azure OpenAI]
+    E --> F[Resposta Estruturada]
 ```
 
 ---
@@ -188,32 +219,17 @@ Centraliza caminhos absolutos do projeto para evitar inconsistências entre exec
 
 ## Grafo de Estados do Agente
 
-```text
-(start)
-   |
-   v
-read_file
-   |
-   v
-validate_content
-   |----------------------|
-   | ok                   | error
-   v                      v
-analyze_document      handle_error
-   |
-   |----------------------|
-   | ok                   | error
-   v                      v
-check_compliance      handle_error
-   |
-   v
-take_action
-   |
-   v
-(end)
+```mermaid
+flowchart TD
+    A[read_file] --> B[validate_content]
+    B -->|ok| C[analyze_document]
+    B -->|erro| F[handle_error]
+    C -->|ok| D[check_compliance]
+    C -->|erro| F
+    D --> E[take_action]
+    E --> G[end]
+    F --> G
 ```
-
----
 
 ## Estado do Documento
 
@@ -293,6 +309,38 @@ Saída:
 ```
 
 ---
+
+
+## Observabilidade
+
+A solução implementa uma camada de observabilidade operacional baseada em:
+
+- métricas de negócio e operacionais;
+- rastreamento por execução via `trace_id`;
+- logs estruturados em cada etapa;
+- exposição de métricas via API;
+- dashboard visual simples no frontend.
+
+### Métricas expostas
+- `automation_success_rate`
+- `manual_intervention_rate`
+- `average_analysis_time`
+- `total_processed`
+- `approved_count`
+- `review_count`
+- `error_count`
+- `total_prompt_tokens`
+- `total_completion_tokens`
+- `total_tokens_used`
+
+### Rastreamento
+Cada execução recebe um identificador único (`trace_id`), permitindo acompanhar o fluxo completo do agente ponta a ponta.
+
+### Dashboard
+As métricas são visualizadas no frontend (Streamlit), permitindo monitoramento de desempenho e eficiência.
+
+### Limitação atual
+A solução não utiliza ferramentas avançadas como OpenTelemetry, Prometheus ou Grafana, mas já fornece visibilidade operacional básica.
 
 ## Considerações Finais
 

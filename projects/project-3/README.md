@@ -50,20 +50,40 @@ Construir um agente inteligente capaz de automatizar o fluxo de análise de conf
 
 ---
 
+## Jornada da Solução
+
+```mermaid
+flowchart LR
+    A[API de Análise] --> B[RAG Confiável]
+    B --> C[Agente Autônomo]
+```
+
 ## Entregáveis Atendidos
 
-### 1. Fluxo de Agentes Funcional
+### 1. 
+Fluxo do Agente
 
-O projeto entrega um fluxo funcional que:
+```mermaid
+flowchart TD
 
-- monitora `data/input/`;
-- detecta novos arquivos `.txt`;
-- invoca a análise de conformidade;
-- decide se o documento está conforme ou não;
-- move o documento para:
-  - `data/output/approved` quando está conforme;
-  - `data/output/rejected_for_review` quando exige revisão manual;
-- cria alerta em log para documentos não conformes.
+Start[Arquivo chega em data/input]
+
+A[read_file]
+B[validate_content]
+C[analyze_document via MCP]
+D[check_compliance]
+E[move_document]
+F[create_alert]
+End[Processamento finalizado]
+
+Start --> A --> B --> C --> D
+
+D -->|Aprovado| E
+D -->|Revisão| F
+
+E --> End
+F --> End
+```
 
 ### 2. Logs e Rastreabilidade
 
