@@ -10,7 +10,7 @@ client = AzureOpenAI(
     api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
 )
-
+# Configura o cliente para se conectar ao Azure OpenAI usando as variáveis de ambiente (separa a configuração da lógica de negócio, facilitando manutenção e segurança)
 def analyze_with_ai(text: str) -> str:
 
     # PROMPT definido para orientar a análise da IA
@@ -42,7 +42,7 @@ def analyze_with_ai(text: str) -> str:
     TEXTO:
     \"\"\"{text}\"\"\"
     """
-
+# Envia o prompt para a IA e recebe a resposta (utiliza o cliente configurado para obter a análise da IA com base no prompt definido)
     response = client.chat.completions.create(
         model=os.getenv("AZURE_DEPLOYMENT_NAME"),
         messages=[{"role": "user", "content": prompt}],

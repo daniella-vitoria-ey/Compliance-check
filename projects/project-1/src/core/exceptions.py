@@ -1,2 +1,0 @@
-class APIConnectionError(Exception):
-    pass
