@@ -1,10 +1,10 @@
 import os
+import shutil
 from src.core.logger import get_logger
 
 logger = get_logger(__name__)
 
 class FileManager:
-
     def move(self, source: str, destination: str):
         os.makedirs(destination, exist_ok=True)
 
@@ -15,6 +15,5 @@ class FileManager:
             logger.warning(f"Arquivo já existe no destino. Sobrescrevendo: {dest_path}")
             os.remove(dest_path)
 
-        os.rename(source, dest_path)
-
+        shutil.move(source, dest_path)
         logger.info(f"Arquivo movido para: {dest_path}")

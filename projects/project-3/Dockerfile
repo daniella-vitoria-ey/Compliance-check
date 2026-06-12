@@ -1,11 +1,14 @@
-FROM python:3.11-slim
+FROM python:3.11
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
 
-COPY ./src ./src
-COPY ./data ./data
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+RUN pip install -r requirements_frontend.txt
 
-CMD ["python", "-m", "src.main"]
+EXPOSE 8000
+EXPOSE 8501
+
+CMD uvicorn src.api.main:app --host 0.0.0.0 --port 8000

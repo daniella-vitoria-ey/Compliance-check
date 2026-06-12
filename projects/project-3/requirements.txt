@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+langgraph
+watchdog
+python-dotenv
+openai
+chromadb
+scikit-learn
+pypdf
+fastmcp
+requests
+httpx
+python-multipart

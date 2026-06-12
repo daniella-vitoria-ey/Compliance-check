@@ -1,154 +1,299 @@
-# Arquitetura do Sistema
+# Arquitetura da Solução
 
 ## Visão Geral
 
-O sistema é composto por três projetos integrados:
+A solução foi desenhada como uma plataforma modular de automação de compliance. O sistema recebe documentos `.txt`, executa uma análise de conformidade a partir da lógica RAG da etapa anterior e realiza automaticamente a ação operacional correspondente.
 
-- Projeto 1 → API simples de análise
-- Projeto 2 → API com RAG (IA + base de conhecimento)
-- Projeto 3 → Agente autônomo responsável pela automação
-
-O Projeto 3 atua como orquestrador e utiliza a API RAG do Projeto 2 para tomar decisões inteligentes.
-
----
-
-## Componentes do Sistema
-
-### Monitor de Diretório
-Observa a pasta data/input e detecta novos arquivos.
-
-Função:
-- Disparar o processamento automático
+A arquitetura separa claramente:
+- entrada do documento;
+- orquestração do agente;
+- comunicação via MCP;
+- análise RAG;
+- movimentação do arquivo;
+- alertas;
+- métricas e status.
 
 ---
 
-### Agente de Compliance
+## Componentes Principais
 
-Executa o fluxo completo:
+### 1. Camada de Entrada
 
-- Ler arquivo
-- Validar conteúdo
-- Chamar API
-- Interpretar resposta
-- Tomar decisão
-- Executar ação
+A entrada pode ocorrer de duas formas:
+
+#### a) Diretório monitorado
+O `Monitor` observa `data/input` e dispara o agente quando um novo `.txt` é detectado.
+
+#### b) Upload via API
+A rota `POST /agent/upload-document` salva o arquivo em `data/input`, reutilizando o mesmo fluxo do monitor.
 
 ---
 
-### API RAG (Projeto 2)
+### 2. Camada de Orquestração
 
-Responsável pela análise inteligente.
+O `ComplianceAgent` é o orquestrador do processo. Ele foi implementado com `LangGraph`, modelando o fluxo como um grafo de estados.
 
+O estado de cada documento carrega:
+- caminho do arquivo;
+- conteúdo;
+- perfil do cliente;
+- resultado da análise;
+- destino final;
+- status;
+- mensagem de erro;
+- tempo de análise.
+
+---
+
+### 3. Camada MCP
+
+A comunicação entre o agente e suas ferramentas foi formalizada com `FastMCP`.
+
+#### Cliente MCP
+Responsável por invocar tools e acessar recursos.
+
+#### Servidor MCP
+Responsável por expor:
+- `analyze_recommendation`;
+- `move_document`;
+- `create_alert`;
+- recurso `metrics://automation`.
+
+---
+
+### 4. Camada de API
+
+A API FastAPI expõe:
+
+#### Análise
+- `POST /analyze`
+
+#### Controle do agente
+- `POST /agent/start-monitor`
+- `POST /agent/stop-monitor`
+- `GET /agent/status`
+- `POST /agent/upload-document`
+- `GET /agent/last-result`
+- #### Métricas
+- `GET /metrics/summary`
+- `GET /metrics/raw`
+
+---
+
+### 5. Camada de Serviço de Compliance
+
+O serviço `analyze_text`:
+- recupera os chunks relevantes da base;
+- aplica reranqueamento;
+- constrói o prompt;
+- chama o LLM;
+- normaliza o retorno;
+- entrega uma resposta estruturada.
+
+Estrutura de saída:
+
+```json
+{
+  "is_compliant": true,
+  "reason": "string",
+  "mentioned_products": [],
+  "sources": [
+    {
+      "source_document": "string",
+      "source_chunk_id": "string"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0
+  }
+}
+
+Além dos campos de decisão e justificativa, a resposta inclui informações de uso do modelo de linguagem (`usage`), permitindo acompanhar o consumo de tokens e estimar o custo operacional da análise.
+```
+
+---
+
+### 6. Camada RAG
+
+#### Ingestão
+Lê documentos da base, faz chunking e persiste no ChromaDB.
+
+#### Recuperação
+Seleciona os documentos mais relevantes para a consulta.
+
+#### Reranking
+Refina a ordem dos resultados antes da montagem do prompt.
+
+---
+
+### 7. Infraestrutura Operacional
+
+#### `agent_status.py`
+Persiste o resultado mais recente do agente.
+
+#### `metrics.py`
+
+Responsável por persistir métricas operacionais e calcular indicadores de desempenho do agente.
+
+As métricas incluem:
+
+- volume processado:
+  - `total_processed`
+  - `approved_count`
+  - `review_count`
+  - `error_count`
+
+- desempenho:
+  - `total_analysis_time_seconds`
+  - `average_analysis_time`
+
+- indicadores de negócio:
+  - `automation_success_rate`
+  - `manual_intervention_rate`
+
+- custo operacional de LLM:
+  - `total_prompt_tokens`
+  - `total_completion_tokens`
+  - `total_tokens_used`
+
+#### `file_manager.py`
+Realiza a movimentação física dos arquivos.
+
+#### `logger.py`
+Centraliza logs da aplicação.
+
+#### `paths.py`
+Centraliza caminhos absolutos do projeto para evitar inconsistências entre execução local, API e monitor.
+
+---
+
+## Fluxo Arquitetural de Ponta a Ponta
+
+1. O documento chega em `data/input`.
+2. O monitor detecta o novo arquivo.
+3. O agente lê o conteúdo.
+4. O agente valida o documento.
+5. O agente chama a tool MCP `analyze_recommendation`.
+6. O MCP chama a rota `/analyze`.
+7. O serviço de compliance executa a análise RAG.
+8. O retorno volta ao agente.
+9. O agente verifica `is_compliant`.
+10. O agente chama a tool `move_document`.
+11. Se necessário, chama `create_alert`.
+12. O sistema atualiza status, métricas e logs.
+
+---
+
+## Grafo de Estados do Agente
+
+```text
+(start)
+   |
+   v
+read_file
+   |
+   v
+validate_content
+   |----------------------|
+   | ok                   | error
+   v                      v
+analyze_document      handle_error
+   |
+   |----------------------|
+   | ok                   | error
+   v                      v
+check_compliance      handle_error
+   |
+   v
+take_action
+   |
+   v
+(end)
+```
+
+---
+
+## Estado do Documento
+
+O agente manipula um `DocumentState` com:
+- `file_path`
+- `content`
+- `client_profile`
+- `result`
+- `destination`
+- `status`
+- `error_message`
+- `analysis_time_seconds`
+
+Esse estado torna a execução explícita e auditável.
+
+---
+
+## Contratos MCP
+
+### Tool: `analyze_recommendation`
 Entrada:
-- Texto do documento
+
+```json
+{
+  "text": "string",
+  "client_profile": "string"
+}
+```
 
 Saída:
-- is_compliant (True ou False)
-- reason (explicação da decisão)
+
+```json
+{
+  "is_compliant": true,
+  "reason": "string",
+  "mentioned_products": [],
+  "sources": []
+}
+```
+
+### Tool: `move_document`
+Entrada:
+
+```json
+{
+  "source": "string",
+  "destination": "string"
+}
+```
+
+Saída:
+
+```json
+{
+  "success": true,
+  "source": "string",
+  "destination": "string"
+}
+```
+
+### Tool: `create_alert`
+Entrada:
+
+```json
+{
+  "message": "string"
+}
+```
+
+Saída:
+
+```json
+{
+  "success": true,
+  "message": "string"
+}
+```
 
 ---
 
-### File Manager
+## Considerações Finais
 
-Responsável por mover arquivos:
-
-- approved
-- rejected_for_review
-
----
-
-### 🔹 Logger
-
-Registra todo o processo:
-
-- rastreabilidade
-- auditoria
-- debug
-
----
-
-## Fluxo do Sistema
-
-1. Detecta arquivo em data/input
-2. Lê conteúdo
-3. Valida conteúdo (evita vazio)
-4. Envia para API RAG
-5. Recebe resposta
-6. Decide:
-   - Conforme → approved
-   - Não conforme → rejected_for_review
-7. Move arquivo
-8. Gera log
-
----
-
-## Modelo de Execução
-
-Pipeline do agente:
-
-START → READ → ANALYZE → DECIDE → ACT → END
-
-Cada etapa é separada e organizada.
-
----
-
-## Estrutura de Pastas
-
-project-3/
-- src/
-  - agents/
-  - core/
-  - services/
-- data/
-  - input/
-  - output/
-    - approved/
-    - rejected_for_review/
-- docs/
-  - architecture.md
-  - decisions.md
-
----
-
-## Comunicação
-
-- O agente se comunica com a API via HTTP
-- Método: POST
-- Endpoint: /analyze
-
----
-
-## Tomada de Decisão
-
-- is_compliant = True → aprovado
-- is_compliant = False → rejeitado + alerta
-
----
-
-## Características
-
-- Arquitetura modular
-- Separação de responsabilidades
-- Uso de IA (RAG)
-- Escalável e reutilizável
-
----
-
-## Evoluções Futuras
-
-- Uso de LangGraph
-- Métricas de performance
-- Dashboard
-- Observabilidade (OpenTelemetry)
-
----
-
-## Conclusão
-
-A arquitetura permite:
-
-- Automação completa do fluxo
-- Decisão baseada em IA
-- Redução de trabalho manual
-
-Resultado: sistema inteligente de compliance automatizado
+A arquitetura foi desenhada para demonstrar claramente a evolução de um componente de análise para um sistema autônomo orientado a processo. O foco foi separar responsabilidades, manter visibilidade operacional e alinhar a implementação aos entregáveis do projeto.
