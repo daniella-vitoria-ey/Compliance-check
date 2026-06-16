@@ -27,5 +27,3 @@ project-3/data/input/*.txt
 # Docker
 .dockerignore
 docker-compose.yml
-
-chroma
