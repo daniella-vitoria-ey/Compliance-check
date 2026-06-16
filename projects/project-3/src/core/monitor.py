@@ -1,10 +1,13 @@
-import time
 import os
-from watchdog.observers import Observer
+import time
+
 from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 
 from src.agents.agent import ComplianceAgent
+from src.core.agent_status import load_agent_status
 from src.core.logger import get_logger
+from src.core.trace_store import find_trace_id_by_file_path, add_trace_step
 
 logger = get_logger(__name__)
 
@@ -12,6 +15,7 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 INPUT_DIR = os.path.join(BASE_DIR, "data", "input")
 APPROVED_DIR = os.path.join(BASE_DIR, "data", "output", "approved")
 REVIEW_DIR = os.path.join(BASE_DIR, "data", "output", "rejected_for_review")
+
 
 class Handler(FileSystemEventHandler):
     def __init__(self):
@@ -33,10 +37,76 @@ class Handler(FileSystemEventHandler):
 
         logger.info(f"Novo arquivo detectado: {file_path}")
 
+        trace_id = find_trace_id_by_file_path(file_path)
+
+        if trace_id:
+            add_trace_step(
+                trace_id=trace_id,
+                step="monitor_detected_file",
+                status="ok",
+                detail=f"Monitor detectou o arquivo: {os.path.basename(file_path)}"
+            )
+
+            add_trace_step(
+                trace_id=trace_id,
+                step="start_processing",
+                status="ok",
+                detail="Monitor iniciou o processamento do documento"
+            )
+
         try:
             self.agent.process(file_path)
+
+            status_data = load_agent_status()
+
+            if trace_id and isinstance(status_data, dict):
+                result = status_data.get("result", {})
+                final_status = status_data.get("status", "unknown")
+                destination = status_data.get("destination")
+                reason = status_data.get("reason", "Execução finalizada")
+
+                analyze_detail = "Análise de conformidade executada com sucesso"
+
+                if isinstance(result, dict):
+                    is_compliant = result.get("is_compliant")
+                    if is_compliant is True:
+                        analyze_detail = "Análise concluída com resultado compatível"
+                    elif is_compliant is False:
+                        analyze_detail = "Análise concluída com necessidade de revisão"
+
+                add_trace_step(
+                    trace_id=trace_id,
+                    step="analyze_recommendation",
+                    status="ok",
+                    detail=analyze_detail
+                )
+
+                if destination:
+                    add_trace_step(
+                        trace_id=trace_id,
+                        step="route_document",
+                        status=final_status,
+                        detail=f"Documento direcionado para: {destination}"
+                    )
+
+                add_trace_step(
+                    trace_id=trace_id,
+                    step="finish",
+                    status=final_status,
+                    detail=reason
+                )
+
         except Exception as e:
             logger.exception(f"Erro inesperado ao processar {file_path}: {str(e)}")
+
+            if trace_id:
+                add_trace_step(
+                    trace_id=trace_id,
+                    step="processing_error",
+                    status="error",
+                    detail=str(e)
+                )
+
 
 class Monitor:
     def __init__(self, path=INPUT_DIR):
