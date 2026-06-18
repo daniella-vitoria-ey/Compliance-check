@@ -5,8 +5,13 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException, UploadFile, File
 
 from src.core.monitor import Monitor
-from src.core.agent_status import load_agent_status
-from src.core.trace_store import start_trace, add_trace_step, get_trace
+from src.core.trace_store import (
+    start_trace,
+    add_trace_step,
+    get_trace,
+    get_trace_result,
+    get_last_result
+)
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
@@ -48,7 +53,7 @@ def stop_monitor():
 
     return {
         "message": "Solicitação de parada enviada",
-            "status": "stopping"
+        "status": "stopping"
     }
 
 
@@ -59,19 +64,32 @@ def monitor_status():
     }
 
 
-@router.get("/last-result")
+@router.get("/last-result", include_in_schema=False)
 def last_result():
-    return load_agent_status()
+    return get_last_result()
 
 
-@router.get("/trace/{trace_id}")
+@router.get("/trace/{trace_id}", include_in_schema=False)
 def trace_result(trace_id: str):
     trace_data = get_trace(trace_id)
 
     if not trace_data:
         raise HTTPException(status_code=404, detail="Trace não encontrado")
 
-    return trace_data
+    return {
+        "trace_id": trace_data["trace_id"],
+        "steps": trace_data.get("agent_steps", [])
+    }
+
+
+@router.get("/result/{trace_id}")
+def result_by_trace(trace_id: str):
+    result = get_trace_result(trace_id)
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Resultado não encontrado para esse trace_id")
+
+    return result
 
 
 @router.post("/upload-document")
@@ -92,7 +110,7 @@ async def upload_document(file: UploadFile = File(...)):
             f.write(content)
 
         trace_id = str(uuid4())
-        start_trace(trace_id, destination)
+        start_trace(trace_id=trace_id, file_path=destination, file_name=file.filename)
 
         add_trace_step(
             trace_id=trace_id,
@@ -124,8 +142,8 @@ async def upload_document(file: UploadFile = File(...)):
 
         return {
             "message": "Arquivo enviado com sucesso",
-            "file_path": destination,
-            "trace_id": trace_id
+            "trace_id": trace_id,
+            "status": "pending"
         }
 
     except HTTPException:

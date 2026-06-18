@@ -1,11 +1,12 @@
+import os
 import time
-import uuid
 from typing import TypedDict, Dict, Any
 from langgraph.graph import StateGraph, END
 
 from src.core.logger import get_logger
 from src.core.metrics import update_metrics
 from src.core.agent_status import save_agent_status
+from src.core.trace_store import add_trace_step, update_trace_result
 from src.mcp.client import ComplianceMCPClient
 from src.tools.alert_tool import create_alert_tool
 
@@ -64,13 +65,17 @@ class ComplianceAgent:
 
         self.graph = workflow.compile()
 
-    def process(self, file_path: str):
-        trace_id = str(uuid.uuid4())
-
+    def process(self, file_path: str, trace_id: str):
         logger.info(f"[trace_id={trace_id}] Iniciando processamento: {file_path}")
 
+        update_trace_result(
+            trace_id=trace_id,
+            status="processing",
+            last_file=os.path.basename(file_path)
+        )
+
         save_agent_status({
-            "last_file": file_path,
+            "last_file": os.path.basename(file_path),
             "status": "processing",
             "destination": None,
             "reason": None,
@@ -97,14 +102,37 @@ class ComplianceAgent:
             f"status={final_state['status']} | destino={final_state['destination']}"
         )
 
+        final_reason = (
+            final_state["result"].get("reason")
+            if final_state.get("result")
+            else final_state.get("error_message")
+        )
+
+        update_trace_result(
+            trace_id=trace_id,
+            status=final_state["status"],
+            destination=final_state["destination"],
+            reason=final_reason,
+            result=final_state.get("result", {}),
+            last_file=os.path.basename(final_state["file_path"])
+        )
+
         save_agent_status({
-            "last_file": final_state["file_path"],
+            "last_file": os.path.basename(final_state["file_path"]),
             "status": final_state["status"],
             "destination": final_state["destination"],
-            "reason": final_state["result"].get("reason") if final_state.get("result") else final_state.get("error_message"),
+            "reason": final_reason,
             "result": final_state.get("result", {}),
             "trace_id": trace_id
         })
+
+        if final_state["status"] != "error":
+            add_trace_step(
+                trace_id=trace_id,
+                step="finish",
+                status=final_state["status"],
+                detail=final_reason or "Processamento concluído"
+            )
 
         return final_state
 
@@ -124,12 +152,27 @@ class ComplianceAgent:
             else:
                 state["client_profile"] = "conservador"
 
+            add_trace_step(
+                trace_id=state["trace_id"],
+                step="read_file",
+                status="ok",
+                detail="Conteúdo do arquivo carregado com sucesso"
+            )
+
             return state
 
         except Exception as e:
             state["status"] = "error"
             state["error_message"] = f"Erro ao ler arquivo: {str(e)}"
             logger.exception(f"[trace_id={state['trace_id']}] {state['error_message']}")
+
+            add_trace_step(
+                trace_id=state["trace_id"],
+                step="read_file",
+                status="error",
+                detail=state["error_message"]
+            )
+
             return state
 
     def validate_content(self, state: DocumentState):
@@ -149,12 +192,28 @@ class ComplianceAgent:
                 raise ValueError("Perfil do cliente inválido.")
 
             state["status"] = "validated"
+
+            add_trace_step(
+                trace_id=state["trace_id"],
+                step="validate_content",
+                status="ok",
+                detail=f"Conteúdo validado com sucesso para o perfil {state['client_profile']}"
+            )
+
             return state
 
         except Exception as e:
             state["status"] = "error"
             state["error_message"] = f"Erro de validação: {str(e)}"
             logger.exception(f"[trace_id={state['trace_id']}] {state['error_message']}")
+
+            add_trace_step(
+                trace_id=state["trace_id"],
+                step="validate_content",
+                status="error",
+                detail=state["error_message"]
+            )
+
             return state
 
     def route_after_validation(self, state: DocumentState):
@@ -204,12 +263,27 @@ class ComplianceAgent:
             logger.info(f"[trace_id={state['trace_id']}] Resultado da análise: {result}")
             logger.info(f"[trace_id={state['trace_id']}] Tempo de análise: {state['analysis_time_seconds']}s")
 
+            add_trace_step(
+                trace_id=state["trace_id"],
+                step="analyze_document",
+                status="ok",
+                detail="Análise de conformidade executada com sucesso"
+            )
+
             return state
 
         except Exception as e:
             state["status"] = "error"
             state["error_message"] = f"Erro na análise: {str(e)}"
             logger.exception(f"[trace_id={state['trace_id']}] {state['error_message']}")
+
+            add_trace_step(
+                trace_id=state["trace_id"],
+                step="analyze_document",
+                status="error",
+                detail=state["error_message"]
+            )
+
             return state
 
     def route_after_analysis(self, state: DocumentState):
@@ -224,10 +298,24 @@ class ComplianceAgent:
             state["destination"] = "data/output/approved"
             state["status"] = "approved"
             logger.info(f"[trace_id={state['trace_id']}] Documento classificado como conforme")
+
+            add_trace_step(
+                trace_id=state["trace_id"],
+                step="check_compliance",
+                status="approved",
+                detail="Documento classificado como conforme"
+            )
         else:
             state["destination"] = "data/output/rejected_for_review"
             state["status"] = "review"
             logger.warning(f"[trace_id={state['trace_id']}] Documento classificado para revisão manual")
+
+            add_trace_step(
+                trace_id=state["trace_id"],
+                step="check_compliance",
+                status="review",
+                detail="Documento classificado para revisão manual"
+            )
 
         return state
 
@@ -264,12 +352,26 @@ class ComplianceAgent:
                 total_tokens=usage.get("total_tokens", 0)
             )
 
+            add_trace_step(
+                trace_id=state["trace_id"],
+                step="take_action",
+                status="ok",
+                detail=f"Documento movido para {state['destination']}"
+            )
+
             return state
 
         except Exception as e:
             state["status"] = "error"
             state["error_message"] = f"Erro ao executar ação: {str(e)}"
             logger.exception(f"[trace_id={state['trace_id']}] {state['error_message']}")
+
+            add_trace_step(
+                trace_id=state["trace_id"],
+                step="take_action",
+                status="error",
+                detail=state["error_message"]
+            )
 
             try:
                 create_alert_tool(state["error_message"])
@@ -292,6 +394,13 @@ class ComplianceAgent:
             )
         except Exception:
             logger.exception(f"[trace_id={state['trace_id']}] Falha até no alerta local")
+
+        add_trace_step(
+            trace_id=state["trace_id"],
+            step="processing_error",
+            status="error",
+            detail=state["error_message"] or "Erro desconhecido no processamento"
+        )
 
         update_metrics(
             status="error",
